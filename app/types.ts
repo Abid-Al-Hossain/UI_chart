@@ -7,6 +7,7 @@ export type ChartState = {
   helper: string;
   id: string;
   ariaLabel: string;
+  ariaDescription: string;
   tabIndex: number;
   width: number;
   height: number;
@@ -27,14 +28,14 @@ export type ChartState = {
   previewState: "default" | "hover" | "focus" | "active" | "open" | "closed" | "selected" | "loading" | "empty" | "error" | "success";
   motion: boolean;
   disabled: boolean;
-  role: "region" | "group" | "status" | "alert" | "dialog" | "menu" | "menubar" | "navigation" | "list" | "tree" | "table" | "tablist" | "form" | "textbox" | "img" | "application";
-  chartType: string;
+  role: "img";
+  chartType: "bar" | "line" | "donut";
   seriesCount: number;
   dataPoints: number;
   showLegend: boolean;
   showTooltip: boolean;
   showGrid: boolean;
-  valueFormat: string;
+  valueFormat: "number" | "compact" | "percent";
 };
 
 export type StudioPreset = { id: string; family: string; archetype: string; variant: string; size: string; tags: string[]; state: ChartState };
