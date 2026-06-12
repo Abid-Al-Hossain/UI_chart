@@ -72,7 +72,7 @@ function BarChart({ state, data }: { state: ChartState; data: ReturnType<typeof 
         {data.map((datum) => (
           <div key={`${datum.label}-${datum.series}`} className="grid flex-1 content-end gap-2 text-center">
             <span className="text-[11px] font-semibold" style={{ color: state.foreground }}>{formatChartValue(datum.value, state.valueFormat)}</span>
-            <div className="mx-auto w-full max-w-12 rounded-t-2xl" style={{ height: `${Math.max(16, (datum.value / max) * 150)}px`, background: datum.color }} />
+            <div className="mx-auto w-full max-w-12 rounded-t-2xl" style={{ height: `${Math.max(16, (datum.value / max) * 150)}px`, background: datum.color, transition: state.motion ? "height 0.4s ease, width 0.4s ease" : "none" }} />
           </div>
         ))}
       </div>

@@ -85,7 +85,7 @@ function BarChart({ config, data }) {
         {data.map((datum) => (
           <div key={\`\${datum.label}-\${datum.series}\`} style={{ flex: 1, display: "grid", alignContent: "end", gap: 8, textAlign: "center" }}>
             <span style={{ fontSize: 11, fontWeight: 700 }}>{formatChartValue(datum.value, config.valueFormat)}</span>
-            <div style={{ height: Math.max(16, (datum.value / max) * 150), borderRadius: "14px 14px 0 0", background: datum.color }} />
+            <div style={{ height: Math.max(16, (datum.value / max) * 150), borderRadius: "14px 14px 0 0", background: datum.color, transition: config.motion ? "height 0.4s ease, width 0.4s ease" : "none" }} />
           </div>
         ))}
       </div>
