@@ -2,10 +2,34 @@
 
 import type { CSSProperties } from "react";
 import type { ChartState } from "../types";
+import { SYSTEM_FONTS } from "@/components/shared/typography/fontConstants";
 import { buildChartData, chartPalette, chartSummary, clampCount, formatChartValue } from "../_utils/chartModel";
 
+function resolveFont(state: { fontBucket: "system" | "google"; googleFontFamily: string; systemFontIdx: number }): string {
+  return state.fontBucket === "google"
+    ? `"${state.googleFontFamily}", sans-serif`
+    : (SYSTEM_FONTS[state.systemFontIdx]?.css ?? "inherit");
+}
+
+function buildShadow(state: { shadowEnabled: boolean; shadowX: number; shadowY: number; shadowBlur: number; shadowSpread: number; shadowColor: string; shadowOpacity: number }): string {
+  if (!state.shadowEnabled) return "none";
+  const hex = Math.round(state.shadowOpacity * 255).toString(16).padStart(2, "0");
+  return `${state.shadowX}px ${state.shadowY}px ${state.shadowBlur}px ${state.shadowSpread}px ${state.shadowColor}${hex}`;
+}
+
+function buildRadius(state: { radiusLinked: boolean; radius: number; radiusTL: number; radiusTR: number; radiusBR: number; radiusBL: number }): string {
+  return state.radiusLinked
+    ? `${state.radius}px`
+    : `${state.radiusTL}px ${state.radiusTR}px ${state.radiusBR}px ${state.radiusBL}px`;
+}
+
 function shell(state: ChartState): CSSProperties {
-  return { width: state.width, minHeight: state.height, padding: state.padding, gap: state.gap, borderRadius: state.radius, border: `${state.borderWidth}px solid ${state.border}`, boxShadow: `0 ${Math.round(state.shadow / 3)}px ${state.shadow}px rgba(0,0,0,.28)`, background: state.background, color: state.foreground, fontFamily: state.fontFamily, opacity: state.disabled ? 0.55 : 1 };
+  return { width: state.width, minHeight: state.height, padding: state.padding, gap: state.gap, borderRadius: buildRadius(state), border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`, boxShadow: buildShadow(state), background: state.background, color: state.foreground, fontFamily: resolveFont(state),
+    fontStyle: state.fontStyle,
+    textTransform: state.textTransform,
+    textDecoration: state.textDecoration,
+    letterSpacing: `${state.letterSpacing}${state.letterSpacingUnit}`,
+    lineHeight: state.lineHeight, opacity: state.disabled ? 0.55 : 1 };
 }
 
 export default function LivePreview({ state }: { state: ChartState }) {
@@ -72,7 +96,7 @@ function BarChart({ state, data }: { state: ChartState; data: ReturnType<typeof 
         {data.map((datum) => (
           <div key={`${datum.label}-${datum.series}`} className="grid flex-1 content-end gap-2 text-center">
             <span className="text-[11px] font-semibold" style={{ color: state.foreground }}>{formatChartValue(datum.value, state.valueFormat)}</span>
-            <div className="mx-auto w-full max-w-12 rounded-t-2xl" style={{ height: `${Math.max(16, (datum.value / max) * 150)}px`, background: datum.color, transition: state.motion ? "height 0.4s ease, width 0.4s ease" : "none" }} />
+            <div className="mx-auto w-full max-w-12 rounded-t-2xl" style={{ height: `${Math.max(16, (datum.value / max) * 150)}px`, background: datum.color, transition: state.transitionDuration > 0 ? "height 0.4s ease, width 0.4s ease" : "none" }} />
           </div>
         ))}
       </div>
