@@ -23,8 +23,24 @@ function buildRadius(state: { radiusLinked: boolean; radius: number; radiusTL: n
     : `${state.radiusTL}px ${state.radiusTR}px ${state.radiusBR}px ${state.radiusBL}px`;
 }
 
+function hexAlpha(hex: string, alpha: number): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  return hex + Math.round(Math.max(0, Math.min(1, alpha)) * 255).toString(16).padStart(2, "0");
+}
+
+function gridBackground(state: ChartState): string {
+  if (!state.showGrid) return "transparent";
+  return `linear-gradient(to top, ${hexAlpha(state.gridColor, state.gridOpacity)} 1px, transparent 1px) 0 0 / 100% 25%`;
+}
+
+function dashArray(style: ChartState["gridStyle"]): string | undefined {
+  if (style === "dashed") return "6 4";
+  if (style === "dotted") return "1 4";
+  return undefined;
+}
+
 function shell(state: ChartState): CSSProperties {
-  return { width: state.width, minHeight: state.height, padding: state.padding, gap: state.gap, borderRadius: buildRadius(state), border: `${state.borderWidth}px ${state.borderStyle} ${state.border}`, boxShadow: buildShadow(state), background: state.background, color: state.foreground, fontFamily: resolveFont(state),
+  return { width: state.width, minHeight: state.height, padding: state.padding, gap: state.gap, borderRadius: buildRadius(state), border: `${state.borderWidth}px ${state.borderStyle} ${state.disabled && state.disabledUseCustomColors ? state.disabledBorder : state.border}`, boxShadow: buildShadow(state), background: state.disabled && state.disabledUseCustomColors ? state.disabledBg : state.background, color: state.foreground, fontFamily: resolveFont(state),
     fontStyle: state.fontStyle,
     textTransform: state.textTransform,
     textDecoration: state.textDecoration,
@@ -62,10 +78,11 @@ function ChartBody({ state, data }: { state: ChartState; data: ReturnType<typeof
 
   return (
     <div className="grid gap-4">
-      {state.showLegend ? <Legend state={state} /> : null}
+      {state.showLegend && state.legendPosition === "top" ? <Legend state={state} /> : null}
       {state.chartType === "bar" ? <BarChart state={state} data={data} /> : null}
       {state.chartType === "line" ? <LineChart state={state} data={data} /> : null}
       {state.chartType === "donut" ? <DonutChart state={state} data={data} /> : null}
+      {state.showLegend && state.legendPosition === "bottom" ? <Legend state={state} /> : null}
       {state.showTooltip && ["hover", "focus", "active"].includes(state.previewState) ? <TooltipPreview state={state} datum={data[0]} /> : null}
     </div>
   );
@@ -78,7 +95,7 @@ function Legend({ state }: { state: ChartState }) {
   return (
     <div className="flex flex-wrap gap-2">
       {Array.from({ length: count }, (_, index) => (
-        <span key={index} className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs" style={{ borderColor: state.border, color: state.foreground }}>
+        <span key={index} className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs" style={{ background: state.legendBg, borderColor: state.legendBorder, color: state.legendText }}>
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: palette[index % palette.length] }} />
           {count > 1 ? `Series ${index + 1}` : state.label}
         </span>
@@ -92,15 +109,17 @@ function BarChart({ state, data }: { state: ChartState; data: ReturnType<typeof 
 
   return (
     <div className="grid gap-3">
-      <div className="flex min-h-48 items-end gap-3 rounded-3xl border p-4" style={{ borderColor: state.border, background: state.showGrid ? "linear-gradient(to top, rgba(148,163,184,.14) 1px, transparent 1px) 0 0 / 100% 25%" : "transparent" }}>
+      {state.yAxisLabel ? <span className="text-[11px] uppercase tracking-[0.12em]" style={{ color: state.labelColor }}>{state.yAxisLabel}</span> : null}
+      <div className="flex min-h-48 items-end rounded-3xl border p-4" style={{ gap: state.barGap, borderColor: state.border, background: state.chartBg !== "transparent" ? state.chartBg : gridBackground(state) }}>
         {data.map((datum) => (
           <div key={`${datum.label}-${datum.series}`} className="grid flex-1 content-end gap-2 text-center">
-            <span className="text-[11px] font-semibold" style={{ color: state.foreground }}>{formatChartValue(datum.value, state.valueFormat)}</span>
-            <div className="mx-auto w-full max-w-12 rounded-t-2xl" style={{ height: `${Math.max(16, (datum.value / max) * 150)}px`, background: datum.color, transition: state.transitionDuration > 0 ? "height 0.4s ease, width 0.4s ease" : "none" }} />
+            <span className="font-semibold" style={{ color: state.labelColor, fontSize: state.labelSize }}>{formatChartValue(datum.value, state.valueFormat)}</span>
+            <div className="mx-auto w-full max-w-12" style={{ height: `${Math.max(16, (datum.value / max) * 150)}px`, borderTopLeftRadius: state.barRadius, borderTopRightRadius: state.barRadius, background: datum.color, transition: state.transitionDuration > 0 ? `height ${state.animationDuration}ms ease, width ${state.animationDuration}ms ease` : "none" }} />
           </div>
         ))}
       </div>
       <AxisLabels state={state} labels={data.map((datum) => datum.shortLabel)} />
+      {state.xAxisLabel ? <span className="text-center text-[11px] uppercase tracking-[0.12em]" style={{ color: state.labelColor }}>{state.xAxisLabel}</span> : null}
     </div>
   );
 }
@@ -115,18 +134,24 @@ function LineChart({ state, data }: { state: ChartState; data: ReturnType<typeof
     return { ...datum, x, y };
   });
 
+  const gridLine = hexAlpha(state.gridColor, state.gridOpacity);
   return (
     <div className="grid gap-3">
-      <svg viewBox={`0 0 ${width} ${height + 34}`} className="min-h-48 w-full rounded-3xl border p-3" style={{ borderColor: state.border, background: state.showGrid ? "linear-gradient(to top, rgba(148,163,184,.14) 1px, transparent 1px) 0 0 / 100% 25%" : "transparent" }} aria-hidden="true">
-        <polyline fill="none" stroke={state.accent} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" points={points.map((point) => `${point.x},${point.y}`).join(" ")} />
+      {state.yAxisLabel ? <span className="text-[11px] uppercase tracking-[0.12em]" style={{ color: state.labelColor }}>{state.yAxisLabel}</span> : null}
+      <svg viewBox={`0 0 ${width} ${height + 34}`} className="min-h-48 w-full rounded-3xl border p-3" style={{ borderColor: state.border, background: state.chartBg !== "transparent" ? state.chartBg : "transparent" }} aria-hidden="true">
+        {state.showGrid ? [0, 0.25, 0.5, 0.75, 1].map((frac) => (
+          <line key={frac} x1={0} x2={width} y1={height * frac + 10} y2={height * frac + 10} stroke={gridLine} strokeWidth={1} strokeDasharray={dashArray(state.gridStyle)} />
+        )) : null}
+        <polyline fill="none" stroke={state.accent} strokeWidth={state.lineWidth} strokeLinecap="round" strokeLinejoin="round" points={points.map((point) => `${point.x},${point.y}`).join(" ")} />
         {points.map((point) => (
           <g key={`${point.label}-${point.series}`}>
-            <circle cx={point.x} cy={point.y} r="6" fill={point.color} stroke={state.background} strokeWidth="3" />
-            <text x={point.x} y={Math.max(12, point.y - 12)} textAnchor="middle" fontSize="20" fill={state.foreground}>{formatChartValue(point.value, state.valueFormat)}</text>
+            <circle cx={point.x} cy={point.y} r={state.pointSize} fill={point.color} stroke={state.pointColor} strokeWidth="3" />
+            <text x={point.x} y={Math.max(12, point.y - 12)} textAnchor="middle" fontSize={state.labelSize + 8} fill={state.labelColor}>{formatChartValue(point.value, state.valueFormat)}</text>
             <text x={point.x} y={height + 28} textAnchor="middle" fontSize="18" fill={state.muted}>{point.shortLabel}</text>
           </g>
         ))}
       </svg>
+      {state.xAxisLabel ? <span className="text-center text-[11px] uppercase tracking-[0.12em]" style={{ color: state.labelColor }}>{state.xAxisLabel}</span> : null}
     </div>
   );
 }
@@ -142,9 +167,9 @@ function DonutChart({ state, data }: { state: ChartState; data: ReturnType<typeo
   return (
     <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
       <div className="relative mx-auto h-52 w-52 rounded-full" style={{ background: `conic-gradient(${segments})` }}>
-        <div className="absolute inset-10 grid place-items-center rounded-full text-center" style={{ background: state.background }}>
+        <div className="absolute grid place-items-center rounded-full text-center" style={{ inset: state.donutThickness, background: state.chartBg !== "transparent" ? state.chartBg : state.background }}>
           <strong style={{ fontSize: state.titleSize }}>{formatChartValue(total, state.valueFormat)}</strong>
-          <span className="text-xs" style={{ color: state.muted }}>total</span>
+          <span className="text-xs" style={{ color: state.muted }}>{state.donutCenterText}</span>
         </div>
       </div>
       <div className="grid gap-2">
@@ -164,7 +189,7 @@ function AxisLabels({ state, labels }: { state: ChartState; labels: string[] }) 
 }
 
 function TooltipPreview({ state, datum }: { state: ChartState; datum: ReturnType<typeof buildChartData>[number] }) {
-  return <div className="w-fit rounded-2xl border px-4 py-3 text-sm" style={{ borderColor: state.border, background: state.background, color: state.foreground }}><strong>{datum.label}</strong><p style={{ color: state.muted }}>{datum.series}: {formatChartValue(datum.value, state.valueFormat)}</p></div>;
+  return <div className="w-fit border px-4 py-3 text-sm" style={{ borderRadius: state.tooltipRadius, borderColor: state.tooltipBorder, background: state.tooltipBg, color: state.tooltipText }}><strong>{datum.label}</strong><p style={{ color: state.tooltipText, opacity: 0.75 }}>{datum.series}: {formatChartValue(datum.value, state.valueFormat)}</p></div>;
 }
 
 function StateOverlay({ state }: { state: ChartState }) {

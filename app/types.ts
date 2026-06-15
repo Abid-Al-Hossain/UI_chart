@@ -1,4 +1,4 @@
-export type SectionId = "presets" | "basics" | "metadata" | "content" | "items" | "behavior" | "layout" | "placement" | "sizing" | "colors" | "border" | "radius" | "shadow" | "typography" | "transitions" | "focus-ring" | "states" | "accessibility";
+export type SectionId = "presets" | "basics" | "metadata" | "content" | "items" | "behavior" | "layout" | "placement" | "sizing" | "colors" | "border" | "radius" | "shadow" | "typography" | "transitions" | "focus-ring" | "states" | "disabled" | "accessibility";
 
 export type ChartState = {
   title: string;
@@ -60,6 +60,12 @@ export type ChartState = {
   fontWeight: number;
   previewState: "default" | "hover" | "focus" | "active" | "open" | "closed" | "selected" | "loading" | "empty" | "error" | "success";
   disabled: boolean;
+  disabledOpacity: number;
+  disabledCursor: "not-allowed" | "default" | "pointer";
+  disabledUseCustomColors: boolean;
+  disabledBg: string;
+  disabledText: string;
+  disabledBorder: string;
   role: "img";
   chartType: "bar" | "line" | "donut";
   seriesCount: number;
@@ -68,6 +74,38 @@ export type ChartState = {
   showTooltip: boolean;
   showGrid: boolean;
   valueFormat: "number" | "compact" | "percent";
+  // Chart area & grid
+  chartBg: string;
+  gridColor: string;
+  gridOpacity: number;
+  gridStyle: "solid" | "dashed" | "dotted";
+  // Labels & axis
+  labelColor: string;
+  labelSize: number;
+  xAxisLabel: string;
+  yAxisLabel: string;
+  // Legend
+  legendBg: string;
+  legendBorder: string;
+  legendText: string;
+  legendPosition: "top" | "bottom";
+  // Tooltip
+  tooltipBg: string;
+  tooltipText: string;
+  tooltipBorder: string;
+  tooltipRadius: number;
+  // Bar
+  barRadius: number;
+  barGap: number;
+  // Line
+  lineWidth: number;
+  pointSize: number;
+  pointColor: string;
+  // Donut
+  donutThickness: number;
+  donutCenterText: string;
+  // Motion
+  animationDuration: number;
 };
 
 export type StudioPreset = { id: string; family: string; archetype: string; variant: string; size: string; tags: string[]; state: Partial<ChartState> & Record<string, unknown> };
@@ -140,6 +178,10 @@ export const SECTIONS: Array<{ id: SectionId; label: string }> = [
   {
     "id": "states",
     "label": "State Preview"
+  },
+  {
+    "id": "disabled",
+    "label": "Disabled"
   },
   {
     "id": "accessibility",
