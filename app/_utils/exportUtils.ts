@@ -1,4 +1,5 @@
 import type { ChartState } from "../types";
+import { ensureReadable, solidBg } from "@/components/shared/color/wcag";
 
 export type ExportPayload = { fileName: string; mimeType: "text/plain;charset=utf-8"; content: string };
 
@@ -6,7 +7,9 @@ export function buildExportPayload(state: ChartState, fileName = "chart") : Expo
   return { fileName: `${fileName || "chart"}.jsx`, mimeType: "text/plain;charset=utf-8", content: buildReactCode(state) };
 }
 
-export function buildReactCode(state: ChartState) {
+export function buildReactCode(stateInput: ChartState) {
+  // Keep the exported legend text WCAG-readable, matching the live preview.
+  const state: ChartState = { ...stateInput, legendText: ensureReadable(stateInput.legendText, solidBg(stateInput.legendBg, stateInput.background)) };
   return `import * as React from "react";
 
 const state = ${JSON.stringify(state, null, 2)};

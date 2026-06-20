@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import type { ChartState } from "../types";
 import { SYSTEM_FONTS } from "@/components/shared/typography/fontConstants";
+import { ensureReadable, solidBg } from "@/components/shared/color/wcag";
 import { buildChartData, chartPalette, chartSummary, clampCount, formatChartValue } from "../_utils/chartModel";
 
 function resolveFont(state: { fontBucket: "system" | "google"; googleFontFamily: string; systemFontIdx: number }): string {
@@ -95,7 +96,7 @@ function Legend({ state }: { state: ChartState }) {
   return (
     <div className="flex flex-wrap gap-2">
       {Array.from({ length: count }, (_, index) => (
-        <span key={index} className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs" style={{ background: state.legendBg, borderColor: state.legendBorder, color: state.legendText }}>
+        <span key={index} className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs" style={{ background: state.legendBg, borderColor: state.legendBorder, color: ensureReadable(state.legendText, solidBg(state.legendBg, state.background)) }}>
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: palette[index % palette.length] }} />
           {count > 1 ? `Series ${index + 1}` : state.label}
         </span>
